@@ -311,56 +311,10 @@ class GradDeltaBlock(nn.Module):
         return v_opt
 
 class hyparaNet(nn.Module):
-    def __init__(self, in_channels=1, out_channels=6, kernel_size=1, stride=1, padding=0):
-        super(hyparaNet, self).__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, 256, kernel_size, stride, padding, bias=True),
-            nn.Sigmoid(),  # 移除了BN层，保留第一个ReLU
-            nn.Conv2d(256, out_channels, kernel_size, stride, padding, bias=True),
-            nn.Softplus()
-        )
-        self.GAP = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(out_channels, 6)
-        self.relu = nn.ReLU(inplace=True)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, Diff):
-        hypara = self.conv1(Diff)
-        # print(hypara.shape)
-        # hypara = self.GAP(hypara)
-        # hypara = hypara.view(hypara.size(0), -1)
-        # hypara = self.fc(hypara)
-        # hypara = self.relu(hypara)
-        # hypara = self.sigmoid(hypara)
         return hypara
 
 
 class Network(nn.Module):
-    def __init__(self, cascades=5):
-        super(Network, self).__init__()
-        self.cascades = cascades
-    def forward(self, T1, T2):
-        B, C, H, W = T1.shape
-        T_prime = nn.Parameter(torch.empty(B, C, H, W)).to('cuda')
-        nn.init.kaiming_normal_(T_prime)
-        Delta = nn.Parameter(torch.empty(B, 1, H, W)).to('cuda')  # 固定单通道
-        nn.init.kaiming_normal_(Delta)
-        Delta_prime = nn.Parameter(torch.empty(B, 1, H, W)).to('cuda')
-        nn.init.kaiming_normal_(Delta_prime)
-        grad_Delta = nn.Parameter(torch.empty(B, 1, H, W)).to('cuda')
-        nn.init.kaiming_normal_(grad_Delta)
-        Diff = T2 - T1
-        T1 = FeatureExtractor(T1)
-        T2 = FeatureExtractor(T2)
-
-        for i in range(self.cascades):
-            hyparas = self.hypara_blocks[i](Diff)
-            alpha, mu1, beta, mu2, gamma, mu3 = torch.split(hyparas, 1, dim=1)
-            T = self.Td_blocks_[i](T1, T2, Delta, T_prime, mu1)
-            T_prime = self.ucnet_blocks[i](T, alpha, mu1)
-            Delta = self.Deltad_blocks[i](T2, T, Delta_prime, mu2)
-            Delta_prime, grad_Delta_prime = self.cenet_blocks[i](Delta, grad_Delta, beta, gamma, mu2, mu3)
-            grad_Delta = self.grad_Deltad_blocks[i](grad_Delta_prime, mu3)
         return T_prime, Delta_prime, grad_Delta
 
 
